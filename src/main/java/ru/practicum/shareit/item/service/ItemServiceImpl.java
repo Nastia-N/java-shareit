@@ -24,16 +24,6 @@ public class ItemServiceImpl implements ItemService {
         UserDto userDto = userService.getUserById(ownerId);
         User owner = UserMapper.toUser(userDto);
 
-        if (itemDto.getName() == null || itemDto.getName().isBlank()) {
-            throw new IllegalArgumentException("Поле name не может быть пустым.");
-        }
-        if (itemDto.getDescription() == null || itemDto.getDescription().isBlank()) {
-            throw new IllegalArgumentException("Поле description не может быть пустым.");
-        }
-        if (itemDto.getAvailable() == null) {
-            throw new IllegalArgumentException("Поле available не может быть пустым.");
-        }
-
         Item item = ItemMapper.toItem(itemDto, owner);
         Item savedItem = itemRepository.save(item);
         return ItemMapper.toItemDto(savedItem);

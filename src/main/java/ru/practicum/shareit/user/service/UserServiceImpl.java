@@ -22,9 +22,6 @@ public class UserServiceImpl implements UserService {
                 .ifPresent(user -> {
                     throw new IllegalArgumentException("Пользователь с таким email уже существует.");
                 });
-        if (!isValidEmail(userDto.getEmail())) {
-            throw new IllegalArgumentException("Некорректный формат email.");
-        }
 
         User user = UserMapper.toUser(userDto);
         User savedUser = userRepository.save(user);
@@ -70,9 +67,5 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUser(Long userId) {
         userRepository.deleteById(userId);
-    }
-
-    private boolean isValidEmail(String email) {
-        return email != null && email.contains("@");
     }
 }
