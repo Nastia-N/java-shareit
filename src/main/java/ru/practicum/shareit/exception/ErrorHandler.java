@@ -1,4 +1,4 @@
-package ru.practicum.shareit;
+package ru.practicum.shareit.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +36,12 @@ public class ErrorHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", message));
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handleNotFoundException(NotFoundException e) {
+        return Map.of("error", e.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
