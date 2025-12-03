@@ -16,15 +16,14 @@ public class ItemMapper {
                 .build();
     }
 
-    public static Item toItem(ItemDto itemDto, User owner) {
+    public static Item toItem(ItemDto itemDto, User owner, ItemRequest request) {
         return Item.builder()
                 .id(itemDto.getId())
                 .name(itemDto.getName())
                 .description(itemDto.getDescription())
                 .available(itemDto.getAvailable())
                 .owner(owner)
-                .request(itemDto.getRequestId() != null ?
-                        ItemRequest.builder().id(itemDto.getRequestId()).build() : null)
+                .request(request)
                 .build();
     }
 }

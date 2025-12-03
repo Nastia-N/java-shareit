@@ -60,4 +60,10 @@ public class ErrorHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", errorMessage));
     }
+
+    @ExceptionHandler(ValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleValidationException(ValidationException e) {
+        return Map.of("error", e.getMessage());
+    }
 }

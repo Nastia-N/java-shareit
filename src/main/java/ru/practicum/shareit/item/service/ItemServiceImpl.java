@@ -10,11 +10,13 @@ import ru.practicum.shareit.booking.dto.BookingInfoDto;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.CommentRepository;
+import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.dto.*;
 import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.ItemRequest;
+import ru.practicum.shareit.request.ItemRequestRepository;
 import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.model.User;
 
@@ -30,6 +32,7 @@ public class ItemServiceImpl implements ItemService {
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final CommentRepository commentRepository;
+    private final ItemRequestRepository itemRequestRepository;
 
     @Override
     public ItemDto createItem(ItemDto itemDto, Long ownerId) {
@@ -40,17 +43,16 @@ public class ItemServiceImpl implements ItemService {
             throw new ValidationException("Название вещи не может быть пустым");
         }
 
-        Item item = Item.builder()
-                .name(itemDto.getName())
-                .description(itemDto.getDescription())
-                .available(itemDto.getAvailable())
-                .owner(owner)
-                .request(itemDto.getRequestId() != null ?
-                        ItemRequest.builder().id(itemDto.getRequestId()).build() : null)
-                .build();
+        ItemRequest request = null;
+        if (itemDto.getRequestId() != null) {
+            request = itemRequestRepository.findById(itemDto.getRequestId())
+                    .orElseThrow(() -> new NotFoundException("Запрос с id " + itemDto.getRequestId() + " не найден"));
+        }
+
+        Item item = ItemMapper.toItem(itemDto, owner, request);
 
         Item savedItem = itemRepository.save(item);
-        return mapToItemDto(savedItem);
+        return ItemMapper.toItemDto(savedItem);
     }
 
     @Override
@@ -174,13 +176,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     private ItemDto mapToItemDto(Item item) {
-        return ItemDto.builder()
-                .id(item.getId())
-                .name(item.getName())
-                .description(item.getDescription())
-                .available(item.getAvailable())
-                .requestId(item.getRequest() != null ? item.getRequest().getId() : null)
-                .build();
+        return ItemMapper.toItemDto(item);
     }
 
     private ItemWithBookingsDto mapToItemWithBookingsDto(Item item) {
