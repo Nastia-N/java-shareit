@@ -9,9 +9,10 @@ import org.springframework.http.ResponseEntity;
 import ru.practicum.shareit.gateway.user.dto.UserDto;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class GatewayIntegrationTest {
+class ShareItGatewayTest {
 
     @Autowired
     private TestRestTemplate restTemplate;
@@ -45,5 +46,16 @@ class GatewayIntegrationTest {
         );
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void mainMethodShouldStartApplication() {
+        assertDoesNotThrow(() -> ShareItGateway.main(new String[]{}));
+    }
+
+    @Test
+    void shareItGatewayClassExists() {
+        assertNotNull(ShareItGateway.class);
+        assertEquals("ShareItGateway", ShareItGateway.class.getSimpleName());
     }
 }
