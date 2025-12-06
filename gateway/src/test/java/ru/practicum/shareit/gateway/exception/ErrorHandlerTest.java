@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = UserController.class)
-class ErrorHandlerIntegrationTest {
+class ErrorHandlerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -49,3 +49,4 @@ class ErrorHandlerIntegrationTest {
                 .andExpect(jsonPath("$.error").exists());
     }
 }
+
