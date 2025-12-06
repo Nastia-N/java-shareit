@@ -58,7 +58,8 @@ class BookingDtoJsonTest {
                   "status": "WAITING",
                   "itemId": 1,
                   "bookerId": 1
-                }""";
+                }
+                """;
 
         BookingDto bookingDto = objectMapper.readValue(json, BookingDto.class);
 
