@@ -4,14 +4,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import ru.practicum.shareit.server.booking.BookingController;
 import ru.practicum.shareit.server.booking.dto.BookingDto;
 import ru.practicum.shareit.server.booking.service.BookingService;
 
 import java.time.LocalDateTime;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
@@ -127,5 +130,14 @@ class ErrorHandlerTest {
                         .header(USER_ID_HEADER, 1L))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Элемент не найден"));
+    }
+
+    @Test
+    void testBadRequestExceptionDirectly() {
+        BadRequestException exception = new BadRequestException("Неверный запрос");
+
+        assertEquals("Неверный запрос", exception.getMessage());
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getClass()
+                .getAnnotation(ResponseStatus.class).value());
     }
 }
