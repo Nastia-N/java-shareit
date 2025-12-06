@@ -1,4 +1,4 @@
-package ru.practicum.shareit.server;
+package ru.practicum.shareit.server.item;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -6,8 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.server.booking.BookingRepository;
+import ru.practicum.shareit.server.booking.model.Booking;
+import ru.practicum.shareit.server.booking.model.BookingStatus;
 import ru.practicum.shareit.server.exception.NotFoundException;
-import ru.practicum.shareit.server.item.ItemRepository;
+import ru.practicum.shareit.server.exception.ValidationException;
+import ru.practicum.shareit.server.item.dto.CommentDto;
 import ru.practicum.shareit.server.item.dto.ItemDto;
 import ru.practicum.shareit.server.item.dto.ItemForOwnerDto;
 import ru.practicum.shareit.server.item.dto.ItemWithBookingsDto;
@@ -26,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @Transactional
 @ActiveProfiles("test")
-class ItemServiceImplIntegrationTest {
+class ItemServiceTest {
 
     @Autowired
     private ItemServiceImpl itemService;
@@ -40,16 +44,32 @@ class ItemServiceImplIntegrationTest {
     @Autowired
     private ItemRequestRepository itemRequestRepository;
 
+    @Autowired
+    private BookingRepository bookingRepository;
+
     private User owner;
+    private User booker;
     private ItemRequest request;
+    private Item item;
 
     @BeforeEach
     void setUp() {
+        bookingRepository.deleteAll();
+        itemRequestRepository.deleteAll();
+        itemRepository.deleteAll();
+        userRepository.deleteAll();
+
         owner = User.builder()
                 .name("Owner Name")
                 .email("owner@test.com")
                 .build();
         owner = userRepository.save(owner);
+
+        booker = User.builder()
+                .name("Booker Name")
+                .email("booker@test.com")
+                .build();
+        booker = userRepository.save(booker);
 
         User requester = User.builder()
                 .name("Requester Name")
@@ -63,13 +83,21 @@ class ItemServiceImplIntegrationTest {
                 .created(LocalDateTime.now())
                 .build();
         request = itemRequestRepository.save(request);
+
+        item = Item.builder()
+                .name("Дрель")
+                .description("Аккумуляторная дрель")
+                .available(true)
+                .owner(owner)
+                .build();
+        item = itemRepository.save(item);
     }
 
     @Test
     void createItem_shouldCreateItemSuccessfully() {
         ItemDto itemDto = ItemDto.builder()
-                .name("Дрель")
-                .description("Аккумуляторная дрель")
+                .name("Новая дрель")
+                .description("Новая аккумуляторная дрель")
                 .available(true)
                 .requestId(request.getId())
                 .build();
@@ -77,8 +105,8 @@ class ItemServiceImplIntegrationTest {
         ItemDto createdItem = itemService.createItem(itemDto, owner.getId());
 
         assertNotNull(createdItem.getId());
-        assertEquals("Дрель", createdItem.getName());
-        assertEquals("Аккумуляторная дрель", createdItem.getDescription());
+        assertEquals("Новая дрель", createdItem.getName());
+        assertEquals("Новая аккумуляторная дрель", createdItem.getDescription());
         assertTrue(createdItem.getAvailable());
         assertEquals(request.getId(), createdItem.getRequestId());
     }
@@ -91,20 +119,14 @@ class ItemServiceImplIntegrationTest {
                 .available(true)
                 .build();
 
+        Long nonExistentOwnerId = 999L;
+
         assertThrows(NotFoundException.class,
-                () -> itemService.createItem(itemDto, 999L));
+                () -> itemService.createItem(itemDto, nonExistentOwnerId));
     }
 
     @Test
     void getItemById_shouldReturnItemWithBookingsForOwner() {
-        Item item = Item.builder()
-                .name("Дрель")
-                .description("Аккумуляторная дрель")
-                .available(true)
-                .owner(owner)
-                .build();
-        item = itemRepository.save(item);
-
         ItemWithBookingsDto result = itemService.getItemById(item.getId(), owner.getId());
 
         assertNotNull(result);
@@ -116,14 +138,6 @@ class ItemServiceImplIntegrationTest {
 
     @Test
     void getItemById_shouldReturnItemWithoutBookingsForOtherUser() {
-        Item item = Item.builder()
-                .name("Дрель")
-                .description("Аккумуляторная дрель")
-                .available(true)
-                .owner(owner)
-                .build();
-        item = itemRepository.save(item);
-
         User otherUser = User.builder()
                 .name("Other User")
                 .email("other@test.com")
@@ -140,21 +154,12 @@ class ItemServiceImplIntegrationTest {
 
     @Test
     void getItemsByOwner_shouldReturnAllOwnerItems() {
-        Item item1 = Item.builder()
-                .name("Дрель")
-                .description("Аккумуляторная дрель")
-                .available(true)
-                .owner(owner)
-                .build();
-
         Item item2 = Item.builder()
                 .name("Отвертка")
                 .description("Набор отверток")
                 .available(false)
                 .owner(owner)
                 .build();
-
-        itemRepository.save(item1);
         itemRepository.save(item2);
 
         List<ItemForOwnerDto> items = itemService.getItemsByOwner(owner.getId());
@@ -166,6 +171,8 @@ class ItemServiceImplIntegrationTest {
 
     @Test
     void searchItems_shouldReturnAvailableItemsMatchingText() {
+        itemRepository.deleteAll();
+
         Item availableItem = Item.builder()
                 .name("Аккумуляторная ДРЕЛЬ Bosch")
                 .description("Мощная дрель")
@@ -194,8 +201,8 @@ class ItemServiceImplIntegrationTest {
         List<ItemDto> results = itemService.searchItems("дрель", owner.getId());
 
         assertEquals(1, results.size());
-        assertEquals("Аккумуляторная ДРЕЛЬ Bosch", results.get(0).getName());
-        assertTrue(results.get(0).getAvailable());
+        assertEquals("Аккумуляторная ДРЕЛЬ Bosch", results.getFirst().getName());
+        assertTrue(results.getFirst().getAvailable());
     }
 
     @Test
@@ -207,36 +214,20 @@ class ItemServiceImplIntegrationTest {
 
     @Test
     void updateItem_shouldUpdateOnlyProvidedFields() {
-        Item existingItem = Item.builder()
-                .name("Старое название")
-                .description("Старое описание")
-                .available(true)
-                .owner(owner)
-                .build();
-        existingItem = itemRepository.save(existingItem);
-
         ItemDto updateDto = ItemDto.builder()
                 .name("Новое название")
                 .available(false)
                 .build();
 
-        ItemDto updatedItem = itemService.updateItem(existingItem.getId(), updateDto, owner.getId());
+        ItemDto updatedItem = itemService.updateItem(item.getId(), updateDto, owner.getId());
 
         assertEquals("Новое название", updatedItem.getName());
-        assertEquals("Старое описание", updatedItem.getDescription()); // Не изменилось
+        assertEquals("Аккумуляторная дрель", updatedItem.getDescription());
         assertFalse(updatedItem.getAvailable());
     }
 
     @Test
     void updateItem_shouldThrowExceptionWhenNotOwner() {
-        Item existingItem = Item.builder()
-                .name("Дрель")
-                .description("Описание")
-                .available(true)
-                .owner(owner)
-                .build();
-        existingItem = itemRepository.save(existingItem);
-
         User otherUser = User.builder()
                 .name("Other User")
                 .email("other@test.com")
@@ -247,9 +238,139 @@ class ItemServiceImplIntegrationTest {
                 .name("Новое название")
                 .build();
 
-        Item finalExistingItem = existingItem;
-        User finalOtherUser = otherUser;
+        Long itemId = item.getId();
+        Long otherUserId = otherUser.getId();
+
         assertThrows(NotFoundException.class,
-                () -> itemService.updateItem(finalExistingItem.getId(), updateDto, finalOtherUser.getId()));
+                () -> itemService.updateItem(itemId, updateDto, otherUserId));
+    }
+
+    @Test
+    void addComment_shouldThrowWhenUserNotBookedItem() {
+        User otherUser = User.builder()
+                .name("Other User")
+                .email("other@test.com")
+                .build();
+        otherUser = userRepository.save(otherUser);
+
+        CommentDto commentDto = CommentDto.builder()
+                .text("Комментарий")
+                .build();
+
+        Long itemId = item.getId();
+        Long otherUserId = otherUser.getId();
+
+        assertThrows(ValidationException.class, () -> {
+            itemService.addComment(itemId, otherUserId, commentDto);
+        });
+    }
+
+    @Test
+    void addComment_shouldCreateCommentWhenUserBookedItem() {
+        LocalDateTime start = LocalDateTime.now().minusDays(3);
+        LocalDateTime end = LocalDateTime.now().minusDays(1);
+
+        Booking booking = Booking.builder()
+                .start(start)
+                .end(end)
+                .item(item)
+                .booker(booker)
+                .status(BookingStatus.APPROVED)
+                .build();
+        bookingRepository.save(booking);
+
+        CommentDto commentDto = CommentDto.builder()
+                .text("Отличная вещь!")
+                .build();
+
+        CommentDto result = itemService.addComment(item.getId(), booker.getId(), commentDto);
+
+        assertNotNull(result.getId());
+        assertEquals("Отличная вещь!", result.getText());
+        assertEquals(booker.getName(), result.getAuthorName());
+        assertNotNull(result.getCreated());
+    }
+
+    @Test
+    void addComment_shouldThrowWhenBookingNotFinished() {
+        LocalDateTime start = LocalDateTime.now().minusDays(1);
+        LocalDateTime end = LocalDateTime.now().plusDays(1);
+
+        Booking booking = Booking.builder()
+                .start(start)
+                .end(end)
+                .item(item)
+                .booker(booker)
+                .status(BookingStatus.APPROVED)
+                .build();
+        bookingRepository.save(booking);
+
+        CommentDto commentDto = CommentDto.builder()
+                .text("Комментарий")
+                .build();
+
+        Long itemId = item.getId();
+        Long bookerId = booker.getId();
+
+        assertThrows(ValidationException.class, () -> {
+            itemService.addComment(itemId, bookerId, commentDto);
+        });
+    }
+
+    @Test
+    void searchItems_shouldReturnEmptyListWhenNoMatches() {
+        List<ItemDto> results = itemService.searchItems("несуществующий текст", owner.getId());
+
+        assertTrue(results.isEmpty());
+    }
+
+    @Test
+    void searchItems_shouldIgnoreCase() {
+        itemRepository.deleteAll();
+
+        Item item1 = Item.builder()
+                .name("ДРЕЛЬ")
+                .description("Инструмент")
+                .available(true)
+                .owner(owner)
+                .build();
+
+        Item item2 = Item.builder()
+                .name("дрель")
+                .description("Электрическая")
+                .available(true)
+                .owner(owner)
+                .build();
+
+        itemRepository.save(item1);
+        itemRepository.save(item2);
+
+        List<ItemDto> results = itemService.searchItems("Дрель", owner.getId());
+
+        assertEquals(2, results.size());
+    }
+
+    @Test
+    void getItemById_shouldThrowWhenItemNotFound() {
+        Long nonExistentItemId = 999L;
+        Long userId = owner.getId();
+
+        assertThrows(NotFoundException.class, () -> {
+            itemService.getItemById(nonExistentItemId, userId);
+        });
+    }
+
+    @Test
+    void updateItem_shouldThrowWhenItemNotFound() {
+        ItemDto updateDto = ItemDto.builder()
+                .name("Новое название")
+                .build();
+
+        Long nonExistentItemId = 999L;
+        Long ownerId = owner.getId();
+
+        assertThrows(NotFoundException.class, () -> {
+            itemService.updateItem(nonExistentItemId, updateDto, ownerId);
+        });
     }
 }

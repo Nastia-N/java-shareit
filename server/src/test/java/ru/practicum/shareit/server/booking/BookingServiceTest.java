@@ -1,4 +1,4 @@
-package ru.practicum.shareit.server;
+package ru.practicum.shareit.server.booking;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.server.booking.BookingRepository;
 import ru.practicum.shareit.server.booking.dto.BookingDto;
 import ru.practicum.shareit.server.booking.model.Booking;
 import ru.practicum.shareit.server.booking.model.BookingState;
@@ -27,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @Transactional
 @ActiveProfiles("test")
-class BookingServiceImplIntegrationTest {
+class BookingServiceTest {
 
     @Autowired
     private BookingServiceImpl bookingService;
@@ -337,6 +336,142 @@ class BookingServiceImplIntegrationTest {
                 owner.getId(), BookingState.ALL, "start", "DESC");
 
         assertEquals(1, bookings.size());
-        assertEquals(booking.getId(), bookings.get(0).getId());
+        assertEquals(booking.getId(), bookings.getFirst().getId());
+    }
+
+    @Test
+    void getUserBookings_shouldReturnCurrentBookings() {
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        LocalDateTime start1 = now.minusDays(1);
+        LocalDateTime end1 = now.plusDays(1);
+
+        Booking booking1 = Booking.builder()
+                .start(start1)
+                .end(end1)
+                .item(item)
+                .booker(booker)
+                .status(BookingStatus.APPROVED)
+                .build();
+
+        bookingRepository.save(booking1);
+
+        List<BookingDto> bookings = bookingService.getUserBookings(
+                booker.getId(), BookingState.CURRENT, "start", "ASC");
+
+        assertEquals(1, bookings.size());
+        assertEquals(booking1.getId(), bookings.getFirst().getId());
+    }
+
+    @Test
+    void getUserBookings_shouldReturnPastBookings() {
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        LocalDateTime start = now.minusDays(3);
+        LocalDateTime end = now.minusDays(1);
+
+        Booking booking = Booking.builder()
+                .start(start)
+                .end(end)
+                .item(item)
+                .booker(booker)
+                .status(BookingStatus.APPROVED)
+                .build();
+
+        bookingRepository.save(booking);
+
+        List<BookingDto> bookings = bookingService.getUserBookings(
+                booker.getId(), BookingState.PAST, "start", "ASC");
+
+        assertEquals(1, bookings.size());
+        assertEquals(booking.getId(), bookings.getFirst().getId());
+    }
+
+    @Test
+    void getUserBookings_shouldReturnFutureBookings() {
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        LocalDateTime start = now.plusDays(1);
+        LocalDateTime end = now.plusDays(3);
+
+        Booking booking = Booking.builder()
+                .start(start)
+                .end(end)
+                .item(item)
+                .booker(booker)
+                .status(BookingStatus.WAITING)
+                .build();
+
+        bookingRepository.save(booking);
+
+        List<BookingDto> bookings = bookingService.getUserBookings(
+                booker.getId(), BookingState.FUTURE, "start", "ASC");
+
+        assertEquals(1, bookings.size());
+        assertEquals(booking.getId(), bookings.getFirst().getId());
+    }
+
+    @Test
+    void getUserBookings_shouldReturnWaitingBookings() {
+        Booking booking = Booking.builder()
+                .start(LocalDateTime.now().plusDays(1))
+                .end(LocalDateTime.now().plusDays(3))
+                .item(item)
+                .booker(booker)
+                .status(BookingStatus.WAITING)
+                .build();
+
+        bookingRepository.save(booking);
+
+        List<BookingDto> bookings = bookingService.getUserBookings(
+                booker.getId(), BookingState.WAITING, "start", "ASC");
+
+        assertEquals(1, bookings.size());
+        assertEquals(BookingStatus.WAITING, bookings.getFirst().getStatus());
+    }
+
+    @Test
+    void getUserBookings_shouldReturnRejectedBookings() {
+        Booking booking = Booking.builder()
+                .start(LocalDateTime.now().plusDays(1))
+                .end(LocalDateTime.now().plusDays(3))
+                .item(item)
+                .booker(booker)
+                .status(BookingStatus.REJECTED)
+                .build();
+
+        bookingRepository.save(booking);
+
+        List<BookingDto> bookings = bookingService.getUserBookings(
+                booker.getId(), BookingState.REJECTED, "start", "ASC");
+
+        assertEquals(1, bookings.size());
+        assertEquals(BookingStatus.REJECTED, bookings.getFirst().getStatus());
+    }
+
+    @Test
+    void getOwnerBookings_shouldReturnCurrentBookings() {
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        LocalDateTime start1 = now.minusDays(1);
+        LocalDateTime end1 = now.plusDays(1);
+
+        Booking booking1 = Booking.builder()
+                .start(start1)
+                .end(end1)
+                .item(item)
+                .booker(booker)
+                .status(BookingStatus.APPROVED)
+                .build();
+
+        bookingRepository.save(booking1);
+
+        List<BookingDto> bookings = bookingService.getOwnerBookings(
+                owner.getId(), BookingState.CURRENT, "start", "ASC");
+        assertEquals(1, bookings.size());
+        assertEquals(booking1.getId(), bookings.getFirst().getId());
+    }
+
+    @Test
+    void getOwnerBookings_shouldHandleEmptyList() {
+        List<BookingDto> bookings = bookingService.getOwnerBookings(
+                owner.getId(), BookingState.ALL, "start", "DESC");
+        assertTrue(bookings.isEmpty());
     }
 }

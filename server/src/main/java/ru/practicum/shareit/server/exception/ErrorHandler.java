@@ -6,6 +6,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -44,10 +45,16 @@ public class ErrorHandler {
         return Map.of("error", e.getMessage());
     }
 
-    @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Map<String, String> handleInternalError(Exception e) {
-        return Map.of("error", "Internal server error");
+    @ExceptionHandler(ConflictException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> handleConflictException(ConflictException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleValidationException(ValidationException e) {
+        return Map.of("error", e.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -61,9 +68,21 @@ public class ErrorHandler {
                 .body(Map.of("error", errorMessage));
     }
 
-    @ExceptionHandler(ValidationException.class)
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, String> handleInternalError(Exception e) {
+        return Map.of("error", "Internal server error");
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleValidationException(ValidationException e) {
-        return Map.of("error", e.getMessage());
+    public Map<String, String> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
+        String errorMessage;
+        if (e.getName().equals("state")) {
+            errorMessage = "Неизвестный статус: " + e.getValue();
+        } else {
+            errorMessage = "Неверный тип параметра: " + e.getName();
+        }
+        return Map.of("error", errorMessage);
     }
 }

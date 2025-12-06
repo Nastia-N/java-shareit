@@ -1,4 +1,4 @@
-package ru.practicum.shareit.server;
+package ru.practicum.shareit.server.request;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -7,7 +7,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.shareit.server.request.ItemRequestController;
 import ru.practicum.shareit.server.request.dto.ItemRequestDto;
 import ru.practicum.shareit.server.request.service.ItemRequestService;
 
@@ -23,7 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = ItemRequestController.class)
-class ItemRequestControllerMockMvcTest {
+class ItemRequestControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -66,7 +65,6 @@ class ItemRequestControllerMockMvcTest {
 
     @Test
     void getUserRequests_shouldReturnUserRequests() throws Exception {
-        // Given
         ItemRequestDto request1 = ItemRequestDto.builder()
                 .id(1L)
                 .description("Нужна дрель")
@@ -84,7 +82,6 @@ class ItemRequestControllerMockMvcTest {
         when(itemRequestService.getUserRequests(eq(1L)))
                 .thenReturn(List.of(request1, request2));
 
-        // When & Then
         mockMvc.perform(get("/requests")
                         .header(USER_ID_HEADER, 1L)
                         .accept(MediaType.APPLICATION_JSON))
@@ -98,7 +95,6 @@ class ItemRequestControllerMockMvcTest {
 
     @Test
     void getAllRequests_shouldReturnOtherUsersRequests() throws Exception {
-        // Given
         ItemRequestDto request = ItemRequestDto.builder()
                 .id(1L)
                 .description("Нужна дрель")
@@ -109,7 +105,6 @@ class ItemRequestControllerMockMvcTest {
         when(itemRequestService.getAllRequests(eq(1L), eq(0), eq(10)))
                 .thenReturn(List.of(request));
 
-        // When & Then
         mockMvc.perform(get("/requests/all")
                         .header(USER_ID_HEADER, 1L)
                         .param("from", "0")
@@ -124,7 +119,6 @@ class ItemRequestControllerMockMvcTest {
 
     @Test
     void getRequestById_shouldReturnRequest() throws Exception {
-        // Given
         ItemRequestDto requestDto = ItemRequestDto.builder()
                 .id(1L)
                 .description("Нужна дрель")
@@ -135,7 +129,6 @@ class ItemRequestControllerMockMvcTest {
         when(itemRequestService.getRequestById(eq(1L), eq(1L)))
                 .thenReturn(requestDto);
 
-        // When & Then
         mockMvc.perform(get("/requests/1")
                         .header(USER_ID_HEADER, 1L)
                         .accept(MediaType.APPLICATION_JSON))

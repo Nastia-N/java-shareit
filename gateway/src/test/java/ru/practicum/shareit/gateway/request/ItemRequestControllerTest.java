@@ -1,4 +1,4 @@
-package ru.practicum.shareit.gateway;
+package ru.practicum.shareit.gateway.request;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -7,8 +7,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.shareit.gateway.request.ItemRequestClient;
-import ru.practicum.shareit.gateway.request.ItemRequestController;
 import ru.practicum.shareit.gateway.request.dto.ItemRequestCreateDto;
 
 import java.nio.charset.StandardCharsets;
@@ -105,6 +103,34 @@ class ItemRequestControllerTest {
 
     @Test
     void getRequestById_shouldRequireUserIdHeader() throws Exception {
+        mockMvc.perform(get("/requests/1")
+                        .header(USER_ID_HEADER, 1L))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void createRequest_withValidData() throws Exception {
+        ItemRequestCreateDto dto = new ItemRequestCreateDto();
+        dto.setDescription("Нужна дрель");
+
+        mockMvc.perform(post("/requests")
+                        .header(USER_ID_HEADER, 1L)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void getAllRequests_withValidPagination() throws Exception {
+        mockMvc.perform(get("/requests/all")
+                        .header(USER_ID_HEADER, 1L)
+                        .param("from", "0")
+                        .param("size", "20"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void getRequestById_withValidId() throws Exception {
         mockMvc.perform(get("/requests/1")
                         .header(USER_ID_HEADER, 1L))
                 .andExpect(status().isOk());

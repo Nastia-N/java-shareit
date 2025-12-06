@@ -1,4 +1,4 @@
-package ru.practicum.shareit.server;
+package ru.practicum.shareit.server.item;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,7 +1,10 @@
 package ru.practicum.shareit.gateway.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -31,5 +34,28 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, String> handleInternalError(Exception e) {
         return Map.of("error", "Внутренняя ошибка сервера");
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleMissingRequestHeader(MissingRequestHeaderException e) {
+        return Map.of("error", "Отсутствует обязательный заголовок: " + e.getHeaderName());
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleConstraintViolation(ConstraintViolationException e) {
+        // Можно извлечь более подробное сообщение
+        String errorMessage = e.getConstraintViolations().stream()
+                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                .findFirst()
+                .orElse("Ошибка валидации параметров");
+        return Map.of("error", errorMessage);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleMissingRequestParam(MissingServletRequestParameterException e) {
+        return Map.of("error", "Отсутствует обязательный параметр: " + e.getParameterName());
     }
 }

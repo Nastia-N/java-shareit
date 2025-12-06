@@ -1,4 +1,4 @@
-package ru.practicum.shareit.server;
+package ru.practicum.shareit.server.item;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -7,7 +7,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.shareit.server.item.ItemController;
 import ru.practicum.shareit.server.item.dto.CommentDto;
 import ru.practicum.shareit.server.item.dto.ItemDto;
 import ru.practicum.shareit.server.item.dto.ItemForOwnerDto;
@@ -26,7 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = ItemController.class)
-class ItemControllerMockMvcTest {
+class ItemControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
