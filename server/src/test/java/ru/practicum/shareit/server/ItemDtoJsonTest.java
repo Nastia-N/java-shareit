@@ -36,15 +36,13 @@ class ItemDtoJsonTest {
 
     @Test
     void shouldDeserializeItemDto() throws JsonProcessingException {
-        String json = """
-                {
-                  "id": 1,
-                  "name": "Дрель",
-                  "description": "Аккумуляторная дрель",
-                  "available": true,
-                  "requestId": 100
-                }
-                """;
+        String json = "{\n" +
+                "  \"id\": 1,\n" +
+                "  \"name\": \"Дрель\",\n" +
+                "  \"description\": \"Аккумуляторная дрель\",\n" +
+                "  \"available\": true,\n" +
+                "  \"requestId\": 100\n" +
+                "}";
 
         ItemDto itemDto = objectMapper.readValue(json, ItemDto.class);
 
@@ -57,12 +55,10 @@ class ItemDtoJsonTest {
 
     @Test
     void shouldHandlePartialUpdate() throws JsonProcessingException {
-        String json = """
-                {
-                  "name": "Новое название",
-                  "available": false
-                }
-                """;
+        String json = "{\n" +
+                "  \"name\": \"Новое название\",\n" +
+                "  \"available\": false\n" +
+                "}";
 
         ItemDto itemDto = objectMapper.readValue(json, ItemDto.class);
 
